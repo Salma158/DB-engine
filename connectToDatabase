@@ -1,0 +1,54 @@
+#! /usr/bin/bash
+
+databases=$(ls ./Databases | wc -l)
+
+if (( $databases == 0))
+then
+echo "the database engine is empty!"
+
+else
+echo "What Database do you want to connect to ?"
+
+read name
+
+if [ -d Databases/$name ]
+then
+cd Databases/$name
+echo "successfully connected to $name database"
+
+
+select choice in "create table" "drop table""list tables" "select from table" "insert into tsble"  "update from table" "delete from table"
+do
+case $REPLY in
+1) echo "1"
+break
+;;
+2) echo "2"
+break
+;;
+3) echo "3"
+break
+;;
+4) echo "4"
+break
+;;
+5) echo "5"
+break
+;;
+6) echo "6"
+break
+;;
+7) echo "7"
+break
+;;
+*)
+echo "Invalid Input."
+;;
+esac
+
+done
+else
+echo "database $name does not exist."
+fi
+fi
+
