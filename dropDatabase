@@ -1,6 +1,6 @@
 #! /usr/bin/bash
 
-databasesCount=$(ls Databases | wc -l)
+databasesCount=$(ls database | wc -l)
 
 if (( $databasesCount == 0 ))
 then
@@ -20,9 +20,9 @@ done
 else
 echo "enter the name database do you want to drop."
 read name
-if [ -d Databases/$name ]
+if [ -d database/$name ]
 then
-rm -r Databases/$name
+rm -r database/$name
 echo "$name database deleted successfully"
 ./main
 else
