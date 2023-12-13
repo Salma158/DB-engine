@@ -51,8 +51,10 @@ counter=1
 while [ "$counter" -le "$num" ]; do
     if [ "$counter" -eq 1 ]; then
         validatePk "$1" "$2"
+        echo -e -n "\n" >> ./database/$1/"${2}_meta"
     else
         validateCol "$1" "$2"
+        echo -e -n "\n" >> ./database/$1/"${2}_meta"
     fi
     ((counter++))
 done
@@ -196,6 +198,7 @@ function enterColConstraints(){
                 ;;
             3)
                 break
+                
                 
                 ;;
             *)
