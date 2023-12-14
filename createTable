@@ -23,7 +23,7 @@ function createTable(){
   if [[ "$name" == *" "* ]]; then
     name=$(echo "${name}" | tr ' ' '_')
 fi
-    touch ./database/$1/"${name}_meta"
+    touch ./database/$1/"${name}"
     touch ./database/$1/"${name}_meta"
     enterColsNum $1 $name
   fi
