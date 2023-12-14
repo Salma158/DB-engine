@@ -216,6 +216,6 @@ function enterColConstraints(){
 }
 
 
-createTable salma
+createTable $1
 
 
