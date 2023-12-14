@@ -1,7 +1,20 @@
 #!/bin/bash
 
-echo "Already existing databases:"
-cd ./data
-ls -F | grep / | tr / " "
+data_folder="./database"
+
+# Check if the "data" folder exists
+if [ ! -d "$data_folder" ]; then
+    echo "No databases yet. 'database' folder does not exist."
+else
+    echo "Already existing databases:"
+    
+    # List existing databases in the "data" folder
+    if [ "$(ls -A "$data_folder")" ]; then
+        ls -F "$data_folder" | grep / | tr / " "
+    else
+        echo "No databases yet. 'data' folder is empty."
+    fi
+fi
+
 
 cd . &> /dev/null
