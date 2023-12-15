@@ -6,14 +6,11 @@ function row_meta() {
     colname=$(echo "$coldata" | cut -d: -f1)
     datatype=$(echo "$coldata" | cut -d: -f2)
     constraints=$(echo "$coldata" | cut -d: -f3-)
-    # Initialize counter for AutoIncremented column
-     counter=$(wc -l < "$DB/$table_name")
 
     if [[ "$constraints" == *"AutoIncremented"* ]]; then
-        # If the column is AutoIncremented, use the counter value and increment it
-        insert_data=$counter
+        # If the column is AutoIncremented, use the counter value
+        insert_data=$2
         echo "Auto-incremented value for $colname: $insert_data"
-        counter=$((counter+1))
     else
         while true; do
             echo "Enter the value of the $colname column. Note that the data type should be ($coldata)"
@@ -51,7 +48,7 @@ function row_meta() {
                 case "$constraint" in
                     "pk")
                         # Logic for pk constraint (e.g., checking uniqueness within the column)
-                        if grep -qw "$insert_data" <(echo "${pk_values[@]}"); then
+                        if grep -qw "$insert_data" <(echo "${pk_values["$colname"]}"); then
                             echo "Error: The value '$insert_data' for the primary key ($colname) must be unique within the column."
                             valid_input=false
                             break
@@ -93,14 +90,15 @@ function row_meta() {
 
     # Add the inserted value to arrays
     if [[ "$constraints" == *"pk"* ]]; then
-        pk_values+=(" $insert_data ")
+        pk_values["$colname"]+=" $insert_data "
     fi
+
+    # Store column name and value in arrays
+    column_values["$colname"]+=" $insert_data "
 
     # Append values into the table file
     echo -n "$insert_data " >> "$DB/$table_name"
 }
-
-
 
 echo "Please enter db_name"
 read db
@@ -117,25 +115,27 @@ if [ -d "$DB" ]; then
             echo "Now you are connected to the table: $DB/$table_name"
             numofcol=$(cat "${DB}/${table_name}_meta" | grep -v '^$' | wc -l)
 
-            # Array to store the column names
-            colnames=()
-
-            # Arrays to store primary key and unique values
-            declare -a pk_values
+            # Arrays to store primary key and all column values
+            declare -A pk_values
             declare -A column_values
 
             # Check if the file is empty before appending column names
             if [ ! -s "$DB/$table_name" ]; then
-                echo -e "$DB/${table_name}_meta" >> "$DB/$table_name"
+                # If the file is empty, add column names
+                for ((i=1; i<=numofcol; i++)); do
+                    coldata=$(sed -n "${i}p" "./database/$db/${table_name}_meta")
+                    colname=$(echo "$coldata" | cut -d: -f1)
+                    echo -n "$colname " >> "$DB/$table_name"
+                done
+                echo "" >> "$DB/$table_name"
             fi
 
-            for ((i=1; i<=numofcol; i++)); do
-                row_meta "$i"
-                colnames+=("$colname")
-            done
+            # Initialize counter for AutoIncremented column
+            counter=$(wc -l < "$DB/$table_name")
 
-            # Append a new line for the next row
-            echo "" >> "$DB/$table_name"
+            for ((i=1; i<=numofcol; i++)); do
+                row_meta "$i" "$counter"
+            done
 
             # Display row values
             echo "Row values:"
@@ -151,9 +151,6 @@ if [ -d "$DB" ]; then
 else
     echo "Error: Database directory not found."
 fi
-
-
-
 
 
 
