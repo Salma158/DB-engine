@@ -16,6 +16,12 @@ function row_meta() {
             echo "Enter the value of the $colname column. Note that the data type should be ($coldata)"
             read insert_data
 
+            # Replace empty input with "_"
+            if [ -z "$insert_data" ] && [[ "$constraints" != *"notNull"* && "$constraints" != *"pk"* ]]; then
+                insert_data="_"
+                break
+            fi
+
             # Validation for null value in PK
             if [[ "$constraints" == *"pk"* ]] && [ -z "$insert_data" ]; then
                 echo "Error: Primary key ($colname) cannot be null."
@@ -43,6 +49,7 @@ function row_meta() {
             IFS=':' read -ra constraints_array <<< "$constraints"
             valid_input=true
 
+            #
             # Iterate through constraints for validation
             for constraint in "${constraints_array[@]}"; do
                 case "$constraint" in
@@ -122,7 +129,7 @@ if [ -d "$DB" ]; then
                 for ((i=1; i<=numofcol; i++)); do
                     coldata=$(sed -n "${i}p" "./database/$db/${table_name}_meta")
                     colname=$(echo "$coldata" | cut -d: -f1)
-                    echo -n "$colname " >> "$DB/$table_name"
+                    echo -n "$colname" >> "$DB/$table_name"
                 done
                 echo "" >> "$DB/$table_name"
             fi
@@ -135,7 +142,8 @@ if [ -d "$DB" ]; then
             done
 
             # Append values into the table file
-            for colname in "${!column_values[@]}"; do
+            for ((i=1; i<=numofcol; i++)); do
+                colname=$(sed -n "${i}p" "./database/$db/${table_name}_meta" | cut -d: -f1)
                 echo -n "${column_values["$colname"]} " >> "$DB/$table_name"
             done
             echo "" >> "$DB/$table_name"
@@ -156,6 +164,21 @@ if [ -d "$DB" ]; then
 else
     echo "Error: Database directory not found."
 fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
