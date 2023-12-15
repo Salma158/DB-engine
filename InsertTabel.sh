@@ -126,7 +126,7 @@ if [ -d "$DB" ]; then
 
             # Check if the file is empty before appending column names
             if [ ! -s "$DB/$table_name" ]; then
-                echo -e "id\tage\tphone" >> "$DB/$table_name"
+                echo -e "$DB/${table_name}_meta" >> "$DB/$table_name"
             fi
 
             for ((i=1; i<=numofcol; i++)); do
@@ -151,6 +151,9 @@ if [ -d "$DB" ]; then
 else
     echo "Error: Database directory not found."
 fi
+
+
+
 
 
 
