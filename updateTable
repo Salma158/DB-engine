@@ -4,119 +4,114 @@ source validateDataType
 source validateConstraint
 
 # $1 name of database
-# $2 name of file 
+# $2 name of file
 
 function validateExistanceOfData() {
-    while true; do
-    echo -n "Enter the name of the column you want to update: "
-    read name
-        if grep -w "$name" "./database/$1/${2}_meta" > /dev/null; then
-            # Know the number of the column (column to update)
-            colNum=$(awk -F: -v col="$name" '{ if ($1 == col) print NR }' "./database/$1/${2}_meta")
-        
-            #check 
-            #echo $colNum
-            #echo $colDataType
-        	
-        	echo -n "Enter the new value: "
-                read value
-                
-                if [ -z "$value" ]
-                then
-                value="_"
-                fi
-                
-            while true; do
-            echo -n "Enter the name of the column for the condition: "
-            read condCol
-            if grep -w "$condCol" "./database/$1/${2}_meta" > /dev/null; then
-                condColNum=$(awk -F: -v col="$condCol" '{ if ($1 == col) print NR }' "./database/$1/${2}_meta")
-        
-                #check 
-                #echo $condColNum
-        	echo -n "Enter the value of the condition: "
-        	read condval
-   	
-                validateValue $colNum $value $1 $2
-                DTvalid=$? 
-                if [[ DTvalid -eq 1 ]]
-                then
-                validConstraint $colNum $value $1 $2
-                Cvalid=$?
-if [[ $Cvalid -eq 1 ]]
-then
-updateRecords $colNum $value $1 $2 $condColNum $condval
-echo "table updated successfully :)"
-else 
-echo "invalid value : violates the constraints of the column"
-fi             
-                else
-                echo "invalid value data type : violates the data type of the column"
-                fi
-                break 2
-            else
-                echo "Invalid input : the name of the condition column you specified doesn't exist!"
-            fi
-            done
-        else
-            echo "Invalid input : the name of the column you specified doesn't exist!"
-        fi
-    done
-}   
+	while true; do
+		echo -n "Enter the name of the column you want to update: "
+		read name
+		if grep -w "$name" "./database/$1/${2}_meta" >/dev/null; then
+			# Know the number of the column (column to update)
+			colNum=$(awk -F: -v col="$name" '{ if ($1 == col) print NR }' "./database/$1/${2}_meta")
+
+			#check
+			#echo $colNum
+			#echo $colDataType
+
+			echo -n "Enter the new value: "
+			read value
+
+			if [ -z "$value" ]; then
+				value="_"
+			fi
+
+			while true; do
+				echo -n "Enter the name of the column for the condition: "
+				read condCol
+				if grep -w "$condCol" "./database/$1/${2}_meta" >/dev/null; then
+					condColNum=$(awk -F: -v col="$condCol" '{ if ($1 == col) print NR }' "./database/$1/${2}_meta")
+
+					#check
+					#echo $condColNum
+					echo -n "Enter the value of the condition: "
+					read condval
+
+					validateValue $colNum $value $1 $2
+					DTvalid=$?
+					if [[ DTvalid -eq 1 ]]; then
+						validConstraint $colNum $value $1 $2
+						Cvalid=$?
+						if [[ $Cvalid -eq 1 ]]; then
+							updateRecords $colNum $value $1 $2 $condColNum $condval
+							echo "table updated successfully :)"
+						else
+							echo "invalid value : violates the constraints of the column"
+						fi
+					else
+						echo "invalid value data type : violates the data type of the column"
+					fi
+					break 2
+				else
+					echo "Invalid input : the name of the condition column you specified doesn't exist!"
+				fi
+			done
+		else
+			echo "Invalid input : the name of the column you specified doesn't exist!"
+		fi
+	done
+}
 
 # $1 colNum to be updated
 # $2 newvalue
 
-function validateValue(){
+function validateValue() {
 
 	colDataType=$(awk -F: -v col="$1" '{ if (NR == col) print $2}' "./database/$3/${4}_meta")
 	# Validate the data type of the value
-        isValidDataType "$2" "$colDataType"
-        dataTypeValid=$?
-        if [[ $dataTypeValid -eq 0 ]]; then
-             #invalid
-              return 0
-        else
-             #valid
-              return 1
-        fi
-}
-
-
-function validConstraint(){
-constraints=$(awk -F: -v target="$1" '{if (NR == target) for (i=3; i<=NF; i++) {print $i}}' "./database/$3/${4}_meta")
-
-		constraintValid=1
-                if [[ $constraints != "" ]]; then
-                    for i in $constraints; do
-                    validateConstraints $1 $2 $3 $4 $i
-		    constraintValid=$?
-                    done
-                    return $constraintValid   
-		else
+	isValidDataType "$2" "$colDataType"
+	dataTypeValid=$?
+	if [[ $dataTypeValid -eq 0 ]]; then
+		#invalid
+		return 0
+	else
+		#valid
 		return 1
-		fi
+	fi
 }
 
-function updateRecords(){
-echo $5 $6
-   NRofRows=$(awk -v fieldnum="$5" -v fieldvalue="$6" -F ":" '{if ($fieldnum == fieldvalue) {print NR}}' "./database/$3/$4")
+function validConstraint() {
+	constraints=$(awk -F: -v target="$1" '{if (NR == target) for (i=3; i<=NF; i++) {print $i}}' "./database/$3/${4}_meta")
 
-   if [[ "$NRofRows" != "" ]]; then
-      for i in $NRofRows; do  
-         
-         awk -v lineNumber="$i" -v newValue="$2" -v fieldNumber="$1" -F: '{OFS=":"} {if (NR==lineNumber) $fieldNumber = newValue} 1' "./database/$3/${4}" > "./database/$3/${4}.tmp" && mv "./database/$3/${4}.tmp" "./database/$3/${4}"
-
-         
-         
-      done
-   else
-      echo "Invalid Input, there is no row matching the condition!"
-   fi
+	constraintValid=1
+	if [[ $constraints != "" ]]; then
+		for i in $constraints; do
+			validateConstraints $1 $2 $3 $4 $i
+			constraintValid=$?
+		done
+		return $constraintValid
+	else
+		return 1
+	fi
 }
 
-# i will add return to main script 
+function updateRecords() {
+	echo $5 $6
+	NRofRows=$(awk -v fieldnum="$5" -v fieldvalue="$6" -F ":" '{if ($fieldnum == fieldvalue) {print NR}}' "./database/$3/$4")
+
+	if [[ "$NRofRows" != "" ]]; then
+		for i in $NRofRows; do
+
+			awk -v lineNumber="$i" -v newValue="$2" -v fieldNumber="$1" -F: '{OFS=":"} {if (NR==lineNumber) $fieldNumber = newValue} 1' "./database/$3/${4}" >"./database/$3/${4}.tmp" && mv "./database/$3/${4}.tmp" "./database/$3/${4}"
+
+		done
+
+	else
+
+		echo "Invalid Input, there is no row matching the condition!"
+	fi
+}
+
+# i will add return to main script
 #i will handle el auto increment
 
 validateExistanceOfData $1 $2
-
