@@ -91,7 +91,7 @@ then
     name=$(echo "${name}" | tr ' ' '_')
    fi
    
-   echo -n $name >> ./database/$1/${2}_meta
+   echo -n $name >> ./database/$1/"${2}_meta"
    enterColDataType $name $1 "${2}_meta" $pk
    
    echo "Do you want the primary key to be Auto incremented ?"
