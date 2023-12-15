@@ -111,7 +111,6 @@ function updateRecords() {
 	fi
 }
 
-# i will add return to main script
-#i will handle el auto increment
+
 
 validateExistanceOfData $1 $2
