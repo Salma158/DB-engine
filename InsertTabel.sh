@@ -90,14 +90,11 @@ function row_meta() {
 
     # Add the inserted value to arrays
     if [[ "$constraints" == *"pk"* ]]; then
-        pk_values["$colname"]+=" $insert_data "
+        pk_values["$colname"]=$insert_data
     fi
 
     # Store column name and value in arrays
-    column_values["$colname"]+=" $insert_data "
-
-    # Append values into the table file
-    echo -n "$insert_data " >> "$DB/$table_name"
+    column_values["$colname"]=$insert_data
 }
 
 echo "Please enter db_name"
@@ -137,10 +134,18 @@ if [ -d "$DB" ]; then
                 row_meta "$i" "$counter"
             done
 
+            # Append values into the table file
+            for colname in "${!column_values[@]}"; do
+                echo -n "${column_values["$colname"]} " >> "$DB/$table_name"
+            done
+            echo "" >> "$DB/$table_name"
+
             # Display row values
             echo "Row values:"
             echo "--------------------------------------------------"
-            cat "$DB/$table_name" | column -t -o "  |  "
+            while IFS= read -r line; do
+                echo "$line" | tr ',' ' ' | column -t -o "  |  "
+            done < "$DB/$table_name"
             echo "--------------------------------------------------"
 
             echo "Row created SUCCESSFULLY"
@@ -151,6 +156,8 @@ if [ -d "$DB" ]; then
 else
     echo "Error: Database directory not found."
 fi
+
+
 
 
 
