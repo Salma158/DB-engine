@@ -2,24 +2,13 @@
 
 data_folder="./database"
 
-# Check if the "data" folder exists
 if [ ! -d "$data_folder" ]; then
     echo "No databases yet. 'database' folder does not exist."
     exit 1
 fi
 
-echo "Available databases:"
-# List existing databases in the "data" folder
-if [ "$(ls -A "$data_folder")" ]; then
-    ls -F "$data_folder" | grep / | tr / " "
-else
-    echo "No databases yet. 'data' folder is empty."
-    exit 1
-fi
 
-echo "Enter database name"
-read dbname
-database_name="$dbname"
+database_name="$1"
 
 # Check if the specified database folder exists
 if [ ! -d "$data_folder/$database_name" ]; then
@@ -28,7 +17,7 @@ if [ ! -d "$data_folder/$database_name" ]; then
 fi
 
 # Check if there are tables (files) in the specified database folder
-tables_folder="$data_folder/$database_name"
+tables_folder="$data_folder/$1"
 if [ ! -d "$tables_folder" ] || [ -z "$(ls -A "$tables_folder" | grep -v "_meta$")" ]; then
     echo "No tables found in the database '$database_name'."
     exit 1
@@ -67,5 +56,4 @@ if [ -f "$meta_file" ]; then
 fi
 
 echo "Table '$table_name' (file) and its metadata dropped successfully."
-
-
+ ./connectToDatabase

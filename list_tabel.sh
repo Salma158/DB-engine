@@ -1,7 +1,6 @@
 #!/bin/bash
-echo "Enter database name"
-read dbname
-database_name="$dbname"
+
+database_name="$1"
 data_folder="./database"
 
 # Check if the specified database exists
@@ -22,5 +21,5 @@ elif [ -n "$(ls "$tables_folder" | grep -v "_meta$")" ]; then
 else
     echo "No tables found in the database '$database_name'."
 fi
-
+./connectToDatabase
 

@@ -97,19 +97,6 @@ then
    echo -n $name >> ./database/$1/"${2}_meta"
    enterColDataType $name $1 "${2}_meta" $pk
    
-   echo "Do you want the primary key to be Auto incremented ?"
-   select option in "YES" "NO"
-   do
-   case $REPLY in
-   1) echo -n ":AutoIncremented" >> ./database/$1/"${2}_meta"
-   break
-   ;;
-   2) break
-   ;;
-   *) echo "Invalid option."
-   ;;
-   esac
-   done
    
    echo -n ":pk" >> ./database/$1/"${2}_meta"
    fi

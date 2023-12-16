@@ -1,197 +1,102 @@
-#!/bin/bash
+#!/usr/bin/bash
 
-function row_meta() {
-    colnum=$1
-    coldata=$(sed -n "${colnum}p" "./database/$db/${table_name}_meta")
-    colname=$(echo "$coldata" | cut -d: -f1)
-    datatype=$(echo "$coldata" | cut -d: -f2)
-    constraints=$(echo "$coldata" | cut -d: -f3-)
+source validateDataType
+source validateConstraint
 
-    if [[ "$constraints" == *"AutoIncremented"* ]]; then
-        # If the column is AutoIncremented, use the counter value
-        insert_data=$2
-        echo "Auto-incremented value for $colname: $insert_data"
-    else
+function insert() {
+    metaData=$(awk 'BEGIN {FS=":"} {print $0}' "./database/$1/${2}_meta")
+    counter=1
+
+    for x in $metaData; do
+        colName=$(echo "$x" | cut -d ":" -f 1)
+        dataType=$(echo "$x" | cut -d ":" -f 2)
+        constraints=$(awk -F: -v target="$counter" '{if (NR == target) for (i=3; i<=NF; i++) {print $i}}' "./database/$1/${2}_meta")
+
         while true; do
-            echo "Enter the value of the $colname column. Note that the data type should be ($coldata)"
-            read insert_data
+            echo "insert data for column $colName "
+            read value
 
-            # Replace empty input with "_"
-            if [ -z "$insert_data" ] && [[ "$constraints" != *"notNull"* && "$constraints" != *"pk"* ]]; then
-                insert_data="_"
-                break
+            if [ -z "$value" ]; then
+                value="_"
             fi
 
-            # Validation for null value in PK
-            if [[ "$constraints" == *"pk"* ]] && [ -z "$insert_data" ]; then
-                echo "Error: Primary key ($colname) cannot be null."
-                continue
-            fi
+            isValidDataType $value $dataType
+            DTvalid=$?
 
-            # Validation for integer data type
-            if [ "$datatype" == "integer" ]; then
-                if [[ ! "$insert_data" =~ ^[0-9]+$ ]]; then
-                    echo "Error: Invalid input for integer data type. Please enter a numeric value."
-                    continue
+            if [[ $DTvalid -eq 1 ]]; then
+                constraintValid=1
+                if [[ $constraints != "" ]]; then
+                    for i in $constraints; do
+                        validateConstraints $counter $value $1 $2 $i
+                        constraintValid=$?
+                        if [[ $constraintValid -eq 0 ]]; then
+                            break
+                        fi
+                    done
                 fi
-            fi
 
-            # Validation for varchar data type (allowing any characters)
-            if [ "$datatype" == "varchar" ] && [ -z "$insert_data" ]; then
-                # Check if "notNull" is a constraint
-                if [[ "$constraints" == *"notNull"* ]]; then
-                    echo "Error: Invalid input for varchar data type. Please enter a non-empty string."
-                    continue
+                if [[ $constraintValid -eq 1 ]]; then
+                    if [[ $counter -eq 1 ]]; then
+                        echo -n "$value" >>"./database/$1/$2"
+                    else
+                        echo -n ":$value" >>"./database/$1/$2"
+                    fi
+                    break
+                else
+                    echo "Invalid value: violates the constraints of the column"
+                    echo "Try again!"
                 fi
-            fi
-
-            # Store constraints in an array
-            IFS=':' read -ra constraints_array <<< "$constraints"
-            valid_input=true
-
-            #
-            # Iterate through constraints for validation
-            for constraint in "${constraints_array[@]}"; do
-                case "$constraint" in
-                    "pk")
-                        # Logic for pk constraint (e.g., checking uniqueness within the column)
-                        if grep -qw "$insert_data" <(echo "${pk_values["$colname"]}"); then
-                            echo "Error: The value '$insert_data' for the primary key ($colname) must be unique within the column."
-                            valid_input=false
-                            break
-                        fi
-
-                        if grep -qw "$insert_data" "$DB/$table_name"; then
-                            echo "Error: The value '$insert_data' for the primary key ($colname) already exists in the table."
-                            valid_input=false
-                            break
-                        fi
-                        ;;
-                    "notNull")
-                        # Logic for notNull constraint
-                        if [ -z "$insert_data" ]; then
-                            echo "Error: Value cannot be null for notNull constraint."
-                            valid_input=false
-                            break
-                        fi
-                        ;;
-                    "unique")
-                        # Logic for unique constraint
-                        if grep -qw "$insert_data" "$DB/$table_name"; then
-                            echo "Error: The value '$insert_data' for the column ($colname) must be unique within the column."
-                            valid_input=false
-                            break
-                        fi
-                        ;;
-                esac
-            done
-
-            if [ "$valid_input" == true ]; then
-                echo "You entered a valid value: $insert_data"
-                break
             else
-                echo "Please enter another unique value for the primary key ($colname)."
+                echo "Invalid value data type: violates the data type of the column"
+                echo "Try again!"
             fi
         done
-    fi
 
-    # Add the inserted value to arrays
-    if [[ "$constraints" == *"pk"* ]]; then
-        pk_values["$colname"]=$insert_data
-    fi
-
-    # Store column name and value in arrays
-    column_values["$colname"]=$insert_data
+        ((counter++))
+    done
+    
+    echo -e -n "\n" >>"./database/$1/$2"
+    echo "sucessfully inserted data inside table"
+    ./main
 }
 
 
 
+while true
+do
+echo "What table do you want to insert into : "
 
+database_name="$1"
+data_folder="./database"
 
-#echo "Please enter db_name"
-#read db
-db=$1
-DB="./database/$db"
-
-if [ -d "$DB" ]; then
-    echo "Please enter table name"
-    read table_name
-
-    if [ -z "$table_name" ]; then
-        echo "You entered an empty name."
-    else
-        if [ -f "$DB/$table_name" ] && [ -f "$DB/${table_name}_meta" ]; then
-            echo "Now you are connected to the table: $DB/$table_name"
-            numofcol=$(cat "${DB}/${table_name}_meta" | grep -v '^$' | wc -l)
-
-            # Arrays to store primary key and all column values
-            declare -A pk_values
-            declare -A column_values
-
-            # Check if the file is empty before appending column names
-            if [ ! -s "$DB/$table_name" ]; then
-                # If the file is empty, add column names
-                for ((i=1; i<=numofcol; i++)); do
-                    coldata=$(sed -n "${i}p" "./database/$db/${table_name}_meta")
-                    colname=$(echo "$coldata" | cut -d: -f1)
-                    echo -n "$colname " >> "$DB/$table_name"
-                done
-                echo "" >> "$DB/$table_name"
-            fi
-
-            # Initialize counter for AutoIncremented column
-            counter=$(wc -l < "$DB/$table_name")
-
-            for ((i=1; i<=numofcol; i++)); do
-                row_meta "$i" "$counter"
-            done
-
-            # Append values into the table file
-            for ((i=1; i<=numofcol; i++)); do
-                colname=$(sed -n "${i}p" "./database/$db/${table_name}_meta" | cut -d: -f1)
-                echo -n "${column_values["$colname"]}" >> "$DB/$table_name"
-                
-                if [ "$i" -lt "$numofcol" ]; then
-       		 echo -n ":" >> "$DB/$table_name"
-    fi
-            done
-            echo "" >> "$DB/$table_name"
-
-            # Display row values
-            echo "Row values:"
-            echo "--------------------------------------------------"
-            while IFS= read -r line; do
-                formatted_line=$(echo "$line" | tr ':' ' ' | column -t -o "  |  ")
-    echo "$formatted_line"
-            done < "$DB/$table_name"
-            echo "--------------------------------------------------"
-
-            echo "Row created SUCCESSFULLY"
-            ./connectToDatabase
-        else
-            echo "Error: Table file or metadata not found."
-        fi
-    fi
-else
-    echo "Error: Database directory not found."
+# Check if the specified database exists
+if [ ! -d "$data_folder/$database_name" ]; then
+    echo "Error: Database '$database_name' does not exist."
+    exit 1
 fi
 
+# Check if there are tables in the specified database
+tables_folder="$data_folder/$database_name"
+if [ ! -d "$tables_folder" ] || [ -z "$(ls -A "$tables_folder")" ]; then
+    echo "No tables found in the database '$database_name'."
+elif [ -n "$(ls "$tables_folder" | grep -v "_meta$")" ]; then
+    echo "Tables in the database '$database_name':"
+    # List tables in the specified database, excluding files ending with "_meta"
+    ls -F "$tables_folder" | grep -v / | grep -v "_meta$"
+    echo ""  # Add a new line for better formatting
+else
+    echo "No tables found in the database '$database_name'."
+fi
 
+read name
+if [ -f ./database/$1/$name ]
+then
+break
+else
+echo "there is not table with this name in the database !"
+fi
+done
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Example usage:
+insert $1 $name
 

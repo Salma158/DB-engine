@@ -41,13 +41,13 @@ case $REPLY in
 1) ./createTable $name
 break
 ;;
-2) echo "2"
+2) ./drop_tabel $name
 break
 ;;
-3) echo "3"
+3) ./list_tabel.sh $name
 break
 ;;
-4) echo "4"
+4) ./selectFromTable $name
 break
 ;;
 5) ./InsertTabel.sh $name
@@ -56,7 +56,7 @@ break
 6) ./updateTable $name
 break
 ;;
-7) echo "7"
+7) ./deleteFromTable $name
 break
 ;;
 8) connect

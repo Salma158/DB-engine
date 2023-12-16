@@ -143,6 +143,19 @@ function enterColumnsToSelect() {
     fi
 }
 
-# Call the function with the appropriate arguments
-enterColumnsToSelect $1 $2
+
+while true
+do
+echo "What table do you want to select into : "
+read name
+if [ -f ./database/$1/$name ]
+then
+break
+else
+echo "there is not table with this name in the database !"
+fi
+done
+
+
+enterColumnsToSelect $1 $name
 
