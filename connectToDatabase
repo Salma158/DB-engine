@@ -1,5 +1,7 @@
 #! /usr/bin/bash
 
+function connect(){
+
 databases=$(ls ./database | wc -l)
 
 if (( $databases == 0))
@@ -8,19 +10,35 @@ echo "the database engine is empty!"
 
 else
 echo "What Database do you want to connect to ?"
+data_folder="./database"
+
+# Check if the "data" folder exists
+if [ ! -d "$data_folder" ]; then
+    echo "No databases yet. 'database' folder does not exist."
+else
+    echo "Already existing databases:"
+    
+    # List existing databases in the "data" folder
+    if [ "$(ls -A "$data_folder")" ]; then
+        ls -F "$data_folder" | grep / | tr / " "
+
+    else
+        echo "No databases yet. 'data' folder is empty."
+    fi
+fi
 
 read name
 
 if [ -d database/$name ]
 then
-cd database/$name
+#cd database/$name
 echo "successfully connected to $name database"
 
 
-select choice in "create table" "drop table""list tables" "select from table" "insert into tsble"  "update from table" "delete from table"
+select choice in "create table" "drop table" "list tables" "select from table" "insert into table"  "update from table" "delete from table" "connect to another database" "return to main" 
 do
 case $REPLY in
-1) ./createTable
+1) ./createTable $name
 break
 ;;
 2) echo "2"
@@ -32,15 +50,22 @@ break
 4) echo "4"
 break
 ;;
-5) echo "5"
+5) ./InsertTabel.sh $name
 break
 ;;
-6) echo "6"
+6) ./updateTable $name
 break
 ;;
 7) echo "7"
 break
 ;;
+8) connect
+break
+;;
+9) ./main
+break
+;;
+
 *)
 echo "Invalid Input."
 ;;
@@ -49,6 +74,11 @@ esac
 done
 else
 echo "database $name does not exist."
+connect
+
 fi
 fi
+}
+
+connect
 

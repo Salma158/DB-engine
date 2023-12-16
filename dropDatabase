@@ -28,6 +28,7 @@ echo "$name database deleted successfully"
 else
 
 echo "$name database does not exist."
+./main
 fi
 
 fi

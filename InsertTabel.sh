@@ -104,8 +104,13 @@ function row_meta() {
     column_values["$colname"]=$insert_data
 }
 
-echo "Please enter db_name"
-read db
+
+
+
+
+#echo "Please enter db_name"
+#read db
+db=$1
 DB="./database/$db"
 
 if [ -d "$DB" ]; then
@@ -129,7 +134,7 @@ if [ -d "$DB" ]; then
                 for ((i=1; i<=numofcol; i++)); do
                     coldata=$(sed -n "${i}p" "./database/$db/${table_name}_meta")
                     colname=$(echo "$coldata" | cut -d: -f1)
-                    echo -n "$colname" >> "$DB/$table_name"
+                    echo -n "$colname " >> "$DB/$table_name"
                 done
                 echo "" >> "$DB/$table_name"
             fi
@@ -144,7 +149,11 @@ if [ -d "$DB" ]; then
             # Append values into the table file
             for ((i=1; i<=numofcol; i++)); do
                 colname=$(sed -n "${i}p" "./database/$db/${table_name}_meta" | cut -d: -f1)
-                echo -n "${column_values["$colname"]} " >> "$DB/$table_name"
+                echo -n "${column_values["$colname"]}" >> "$DB/$table_name"
+                
+                if [ "$i" -lt "$numofcol" ]; then
+       		 echo -n ":" >> "$DB/$table_name"
+    fi
             done
             echo "" >> "$DB/$table_name"
 
@@ -152,11 +161,13 @@ if [ -d "$DB" ]; then
             echo "Row values:"
             echo "--------------------------------------------------"
             while IFS= read -r line; do
-                echo "$line" | tr ',' ' ' | column -t -o "  |  "
+                formatted_line=$(echo "$line" | tr ':' ' ' | column -t -o "  |  ")
+    echo "$formatted_line"
             done < "$DB/$table_name"
             echo "--------------------------------------------------"
 
             echo "Row created SUCCESSFULLY"
+            ./connectToDatabase
         else
             echo "Error: Table file or metadata not found."
         fi

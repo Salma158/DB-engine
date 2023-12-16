@@ -44,19 +44,28 @@ function validateExistanceOfData() {
 						if [[ $Cvalid -eq 1 ]]; then
 							updateRecords $colNum $value $1 $2 $condColNum $condval
 							echo "table updated successfully :)"
+							./connectToDatabase
 						else
 							echo "invalid value : violates the constraints of the column"
+							echo "Try again !"
+							validateExistanceOfData $1 $2
 						fi
 					else
 						echo "invalid value data type : violates the data type of the column"
+						echo "Try again !"
+						validateExistanceOfData $1 $2
 					fi
 					break 2
 				else
 					echo "Invalid input : the name of the condition column you specified doesn't exist!"
+					echo "Try again !"
+					validateExistanceOfData $1 $2
 				fi
 			done
 		else
 			echo "Invalid input : the name of the column you specified doesn't exist!"
+			echo "Try again !"
+			validateExistanceOfData $1 $2
 		fi
 	done
 }
@@ -108,9 +117,12 @@ function updateRecords() {
 	else
 
 		echo "Invalid Input, there is no row matching the condition!"
+		echo "Try again !"
+		./connectToDatabase
 	fi
 }
 
+echo "enter the name of the table you want to update : "
+read name
 
-
-validateExistanceOfData $1 $2
+validateExistanceOfData $1 $name

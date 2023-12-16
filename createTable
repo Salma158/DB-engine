@@ -39,12 +39,14 @@ elif ! [[ $num =~ ^[0-9]+$ ]]
 then
 	echo "Invalid input: expected numbers only ."
     enterColsNum $1 $2
-elif [[ $num -lt 2 ]]
+elif [[ $num -lt 1 ]]
 then
  	echo "Invalid input: expected number greater than two ."
+ 	enterColsNum $1 $2
 elif [[ $num -gt 1000 ]]
 then
  	echo "Invalid input: expected number less than 1000 ."
+ 	enterColsNum $1 $2
 else
 
 counter=1
@@ -59,6 +61,7 @@ while [ "$counter" -le "$num" ]; do
     ((counter++))
 done
  echo "Table created successfully!"
+ ./connectToDatabase
 fi
 }
 

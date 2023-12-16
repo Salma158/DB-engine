@@ -11,6 +11,7 @@ else
     # List existing databases in the "data" folder
     if [ "$(ls -A "$data_folder")" ]; then
         ls -F "$data_folder" | grep / | tr / " "
+        ./main
     else
         echo "No databases yet. 'data' folder is empty."
     fi

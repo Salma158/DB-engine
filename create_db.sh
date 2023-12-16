@@ -46,6 +46,7 @@ while true; do
         continue
     else
         mkdir -p "$dbpath" && echo "Success: Database directory '$dbname' created."
+        ./main
         break
     fi
 done
