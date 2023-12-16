@@ -1,0 +1,71 @@
+#!/bin/bash
+
+data_folder="./database"
+
+# Check if the "data" folder exists
+if [ ! -d "$data_folder" ]; then
+    echo "No databases yet. 'database' folder does not exist."
+    exit 1
+fi
+
+echo "Available databases:"
+# List existing databases in the "data" folder
+if [ "$(ls -A "$data_folder")" ]; then
+    ls -F "$data_folder" | grep / | tr / " "
+else
+    echo "No databases yet. 'data' folder is empty."
+    exit 1
+fi
+
+echo "Enter database name"
+read dbname
+database_name="$dbname"
+
+# Check if the specified database folder exists
+if [ ! -d "$data_folder/$database_name" ]; then
+    echo "Error: Database '$database_name' does not exist."
+    exit 1
+fi
+
+# Check if there are tables (files) in the specified database folder
+tables_folder="$data_folder/$database_name"
+if [ ! -d "$tables_folder" ] || [ -z "$(ls -A "$tables_folder" | grep -v "_meta$")" ]; then
+    echo "No tables found in the database '$database_name'."
+    exit 1
+else
+    echo "Tables in the database '$database_name':"
+    # List tables (files) in the specified database folder, excluding files ending with "_meta"
+    ls -F "$tables_folder" | grep -v / | grep -v "_meta$" | tr "\n" " "
+    echo ""  # Add a new line for better formatting
+fi
+
+echo "Enter table name to drop"
+read table_name
+
+# Check if the table file exists
+table_path="$tables_folder/$table_name"
+if [ ! -f "$table_path" ]; then
+    echo "Error: Table '$table_name' (file) does not exist in the database '$database_name'."
+    exit 1
+fi
+
+# Confirm with the user before dropping the table
+echo "Are you sure you want to drop the table '$table_name' (file) in the database '$database_name'? (y/n)"
+read confirmation
+if [ "$confirmation" != "y" ]; then
+    echo "Operation canceled."
+    exit 0
+fi
+
+# Drop the table (file)
+rm "$table_path"
+
+# Drop the metadata file
+meta_file="$tables_folder/${table_name}_meta"
+if [ -f "$meta_file" ]; then
+    rm "$meta_file"
+fi
+
+echo "Table '$table_name' (file) and its metadata dropped successfully."
+
+
