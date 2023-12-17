@@ -1,164 +1,194 @@
 #!/bin/bash
 
 function enterColumnsToSelect() {
-    all=0
-    selectedColumns=()
-# all or not
-    echo "Do you want to select specific columns or all?"
-    select choice in "all" "specific columns"; do
-        case $choice in
-            "all")
-                all=1
-                break
-                ;;
-            "specific columns")
-                break
-                ;;
-            *)
-                echo "Invalid option. Please select again."
-                ;;
-        esac
-    done
+	all=0
+	selectedColumns=()
+	# all or not
+	echo "Do you want to select specific columns or all?"
+	select choice in "all" "specific columns"; do
+		case $choice in
+		"all")
+			all=1
+			break
+			;;
+		"specific columns")
+			break
+			;;
+		*)
+			echo "Invalid option. Please select again."
+			;;
+		esac
+	done
 
-# to find the specific columns
-    if [[ $all -eq 0 ]]; then
-        echo "Here is a list of the column names of the table. Choose columns to select (enter 'done' to finish): "
-        tableFields=$(awk -F: '{print $1}' "./database/$1/${2}_meta")
+	# to find the specific columns
+	if [[ $all -eq 0 ]]; then
+		echo "Here is a list of the column names of the table. Choose columns to select (enter 'done' to finish): "
+		tableFields=$(awk -F: '{print $1}' "./database/$1/${2}_meta")
 
-        for i in $tableFields; do
-            echo $i
-        done
+		for i in $tableFields; do
+			echo $i
+		done
 
-        while true; do
-            read -p "Enter a column name (or 'done' to finish): " column
+		while true; do
+			read -p "Enter a column name (or 'done' to finish): " column
 
-            if [[ $column == "done" ]]; then
-                break
-            fi
+			if [[ $column == "done" ]]; then
+				break
+			fi
 
-            found=false
-            for i in $tableFields; do
-                if [[ $column == $i ]]; then
-                    found=true
-                    if [[ ! " ${selectedColumns[@]} " =~ " $column " ]]; then
-                        colNums=$(awk -F: -v name="$column" '{if ( $1 == name ) {print NR}}' "./database/$1/${2}_meta" )
-                        selectedColumns+=("$colNums")
-                    else
-                        echo "Column $column is already selected. Please choose a different column."
-                    fi
-                    break
-                fi
-            done
+			found=false
+			for i in $tableFields; do
+				if [[ $column == $i ]]; then
+					found=true
+					if [[ ! " ${selectedColumns[@]} " =~ " $column " ]]; then
+						colNums=$(awk -F: -v name="$column" '{if ( $1 == name ) {print NR}}' "./database/$1/${2}_meta")
+						selectedColumns+=("$colNums")
+					else
+						echo "Column $column is already selected. Please choose a different column."
+					fi
+					break
+				fi
+			done
 
-            if [[ $found == false ]]; then
-                echo "Invalid selection. No column with this name in the table!"
-                
-            fi
-        done
-    fi
+			if [[ $found == false ]]; then
+				echo "Invalid selection. No column with this name in the table!"
 
-#to know condition or not
-    cond=0
+			fi
+		done
+	fi
 
-    echo "Do you have a specific condition you want to select rows based on?"
-    select choice in "yes" "no"; do
-        case $choice in
-            "yes")
-                cond=1
-                break
-                ;;
-            "no")
-                break
-                ;;
-            *)
-                echo "Invalid option. Please select again."
-                ;;
-        esac
-    done
+	#to know condition or not
+	cond=0
 
+	echo "Do you have a specific condition you want to select rows based on?"
+	select choice in "yes" "no"; do
+		case $choice in
+		"yes")
+			cond=1
+			break
+			;;
+		"no")
+			break
+			;;
+		*)
+			echo "Invalid option. Please select again."
+			;;
+		esac
+	done
 
+	if [[ $cond -eq 1 ]]; then
+		echo "Enter the name of the column you want the condition based on: "
+		read condCol
+		if grep -w "$condCol" "./database/$1/${2}_meta" >/dev/null; then
+			condColNum=$(awk -F: -v col="$condCol" '{ if ($1 == col) print NR }' "./database/$1/${2}_meta")
 
+			echo -n "Enter the value of the condition: "
+			read condval
 
+			# find rows with this value
+			NRofRows=$(awk -v fieldnum="$condColNum" -v fieldvalue="$condval" -F ":" '{if ($fieldnum == fieldvalue) {print NR}}' "./database/$1/$2")
 
-    if [[ $cond -eq 1 ]]; then
-        echo "Enter the name of the column you want the condition based on: "
-        read condCol
-        if grep -w "$condCol" "./database/$1/${2}_meta" >/dev/null; then
-            condColNum=$(awk -F: -v col="$condCol" '{ if ($1 == col) print NR }' "./database/$1/${2}_meta")
+			if [[ "$NRofRows" != "" ]]; then
 
-            echo -n "Enter the value of the condition: "
-            read condval
+				if [[ $all -eq 1 ]]; then
 
-            # find rows with this value
-            NRofRows=$(awk -v fieldnum="$condColNum" -v fieldvalue="$condval" -F ":" '{if ($fieldnum == fieldvalue) {print NR}}' "./database/$1/$2")
+					tableFields=$(awk -F: '{print $1}' "./database/$1/${2}_meta")
 
-            if [[ "$NRofRows" != "" ]]; then
-            
-            if [[ $all -eq  1 ]]
-            then
-            for i in $NRofRows
-            do
-            awk -F: -v row="$i" '{if (NR == row) {print $0}}' "./database/$1/${2}"
-            done
-            
-            else
-                for i in $NRofRows; do
-                    rowValues=()
-                    for j in "${selectedColumns[@]}"; do
-                        value=$(awk -F: -v row="$i" -v col="$j" '{if (NR == row) {print $col}}' "./database/$1/${2}")
-                        rowValues+=("$value")
-                    done
-                    echo "${rowValues[*]}"
-                done
-            fi
-                
-                
-            else
-                echo "There is no row matching the condition!"
-                ./connectToDatabase
-            fi
-        else
-            echo "Invalid column name for the condition!"
-            ./connectToDatabase
-        fi
-        
-        
-        
-    else
-    
-    if [[ $all -eq 1 ]]; then
-        # all columns are selected and no condition is specified
-        awk -F: '{print $0}' "./database/$1/$2"
-    else 
-    NRofRows=$(awk -F: '{print NR}' "./database/$1/$2")
-    
-    	for i in $NRofRows; do
-                    rowValues=()
-                    for j in "${selectedColumns[@]}"; do
-                        value=$(awk -F: -v row="$i" -v col="$j" '{if (NR == row) {print $col}}' "./database/$1/${2}")
-                        rowValues+=("$value")
-                    done
-                    echo "${rowValues[*]}"
-                done
-       ./connectToDatabase
-                    
-    fi
-    fi
+					for i in $tableFields; do
+						echo -n "$i "
+					done
+					echo -e "\n--------------"
+
+					awk -F: '{print $0}' "./database/$1/$2"
+
+					for i in $NRofRows; do
+						awk -F: -v row="$i" '{if (NR == row) {print $0}}' "./database/$1/${2}"
+					done
+
+				else
+
+					selectedColNames=()
+					for i in "${selectedColumns[@]}"; do
+						value=$(awk -F: -v row="$i" '{if (NR == row) {print $1}}' "./database/$1/${2}_meta")
+						selectedColNames+=("$value")
+					done
+
+					for i in "${selectedColNames[@]}"; do
+						echo -n "$i "
+					done
+					echo -e "\n--------------"
+
+					for i in $NRofRows; do
+						rowValues=()
+						for j in "${selectedColumns[@]}"; do
+							value=$(awk -F: -v row="$i" -v col="$j" '{if (NR == row) {print $col}}' "./database/$1/${2}")
+							rowValues+=("$value")
+						done
+						echo "${rowValues[*]}"
+					done
+					./connectToDatabase
+				fi
+
+			else
+
+				echo "There is no row matching the condition!"
+				./connectToDatabase
+			fi
+		else
+			echo "Invalid column name for the condition!"
+			./connectToDatabase
+		fi
+
+	else
+
+		if [[ $all -eq 1 ]]; then
+			# all columns are selected and no condition is specified
+			tableFields=$(awk -F: '{print $1}' "./database/$1/${2}_meta")
+
+			for i in $tableFields; do
+				echo -n "$i "
+			done
+			echo -e "\n--------------"
+
+			awk -F: '{print $0}' "./database/$1/$2"
+			./connectToDatabase
+		else
+
+			selectedColNames=()
+			for i in "${selectedColumns[@]}"; do
+				value=$(awk -F: -v row="$i" '{if (NR == row) {print $1}}' "./database/$1/${2}_meta")
+				selectedColNames+=("$value")
+			done
+
+			for i in "${selectedColNames[@]}"; do
+				echo -n "$i "
+			done
+			echo -e "\n--------------"
+
+			NRofRows=$(awk -F: '{print NR}' "./database/$1/$2")
+
+			for i in $NRofRows; do
+				rowValues=()
+				for j in "${selectedColumns[@]}"; do
+					value=$(awk -F: -v row="$i" -v col="$j" '{if (NR == row) {print $col}}' "./database/$1/${2}")
+					rowValues+=("$value")
+				done
+				echo "${rowValues[*]}"
+			done
+			./connectToDatabase
+
+		fi
+	fi
 }
 
-
-while true
-do
-echo "What table do you want to select into : "
-read name
-if [ -f ./database/$1/$name ]
-then
-break
-else
-echo "there is not table with this name in the database !"
-fi
+while true; do
+	echo "What table do you want to select into : "
+	read name
+	if [ -f ./database/$1/$name ]; then
+		break
+	else
+		echo "there is not table with this name in the database !"
+	fi
 done
 
-
 enterColumnsToSelect $1 $name
-

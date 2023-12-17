@@ -95,7 +95,7 @@ function validConstraint() {
 	if [[ $constraints != "" ]]; then
 		for i in $constraints; do
 			validateConstraints $1 $2 $3 $4 $i
-			
+
 			constraintValid=$?
 		done
 		return $constraintValid
@@ -109,21 +109,17 @@ function updateRecords() {
 	NRofRows=$(awk -v fieldnum="$5" -v fieldvalue="$6" -F ":" '{if ($fieldnum == fieldvalue) {print NR}}' "./database/$3/$4")
 
 	if [[ "$NRofRows" != "" ]]; then
-	
-        constraints=$(awk -F: -v target="$1" '{if (NR == target) for (i=3; i<=NF; i++) {print $i}}' "./database/$3/${4}_meta")
-        
-        for i in $constraints
-        do
-        if [[ ("$i" == "unique" || "$i" == "pk" ) && $(echo "$NRofRows" | wc -w) -gt 1 ]]; then
-            echo "Invalid Input: The column has a unique or pk constraint, and updating multiple rows is not allowed!"
-            echo "Try again !"
-            ./connectToDatabase
-        fi
-        done
-	
-	
-	
-	
+
+		constraints=$(awk -F: -v target="$1" '{if (NR == target) for (i=3; i<=NF; i++) {print $i}}' "./database/$3/${4}_meta")
+
+		for i in $constraints; do
+			if [[ ("$i" == "unique" || "$i" == "pk") && $(echo "$NRofRows" | wc -w) -gt 1 ]]; then
+				echo "Invalid Input: The column has a unique or pk constraint, and updating multiple rows is not allowed!"
+				echo "Try again !"
+				./connectToDatabase
+			fi
+		done
+
 		for i in $NRofRows; do
 
 			awk -v lineNumber="$i" -v newValue="$2" -v fieldNumber="$1" -F: '{OFS=":"} {if (NR==lineNumber) $fieldNumber = newValue} 1' "./database/$3/${4}" >"./database/$3/${4}.tmp" && mv "./database/$3/${4}.tmp" "./database/$3/${4}"
@@ -138,20 +134,15 @@ function updateRecords() {
 	fi
 }
 
-
-while true
-do
-echo "What table do you want to update from : "
-read name
-if [ -f ./database/$1/$name ]
-then
-break
-else
-echo "there is not table with this name in the database !"
-fi
+while true; do
+	echo "What table do you want to update from : "
+	read name
+	if [ -f ./database/$1/$name ]; then
+		break
+	else
+		echo "there is not table with this name in the database !"
+	fi
 done
-
-
 
 # validate name dont forget
 validateExistanceOfData $1 $name

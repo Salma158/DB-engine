@@ -1,211 +1,198 @@
 #! /usr/bin/bash
 
+function createTable() {
+	echo -n "Enter the name of the table you want to create (note : if you entered spaces in the name they will be replaced with underscores) : "
+	read name
 
+	if [ -f "./$name" ]; then
+		echo "You already have a table with this name in this Database!"
+		createTable
+	elif [ -z "$name" ]; then
+		echo "Invalid input: empty string."
+		createTable $1
+	elif [[ "$name" == [1-9]* ]]; then
+		echo "Invalid input: Table name shouldn't start with a number."
+		createTable $1
+	elif ! [[ "$name" == [a-zA-Z]* ]]; then
+		echo "Invalid input: Table name shouldn't start with a special character."
+		createTable $1
+	else
 
-function createTable(){
-  echo -n "Enter the name of the table you want to create (note : if you entered spaces in the name they will be replaced with underscores) : "
-  read name
-
-  if [ -f "./$name" ]; then
-    echo "You already have a table with this name in this Database!"
-    createTable
-  elif [ -z "$name" ]; then
-    echo "Invalid input: empty string."
-    createTable $1
-  elif [[ "$name" == [1-9]* ]]; then
-    echo "Invalid input: Table name shouldn't start with a number."
-    createTable $1
-  elif ! [[ "$name" == [a-zA-Z]* ]]; then
-    echo "Invalid input: Table name shouldn't start with a special character."
-    createTable $1
-  else
-  
-  if [[ "$name" == *" "* ]]; then
-    name=$(echo "${name}" | tr ' ' '_')
-fi
-    touch ./database/$1/"${name}"
-    touch ./database/$1/"${name}_meta"
-    enterColsNum $1 $name
-  fi
+		if [[ "$name" == *" "* ]]; then
+			name=$(echo "${name}" | tr ' ' '_')
+		fi
+		touch ./database/$1/"${name}"
+		touch ./database/$1/"${name}_meta"
+		enterColsNum $1 $name
+	fi
 }
 
-function enterColsNum(){
-echo "enter the number of columns for the table : "
-read num
-if [ -z "$num" ]; then
-    echo "Invalid input: empty value."
-    enterColsNum $1 $2
-elif ! [[ $num =~ ^[0-9]+$ ]]
-then
-	echo "Invalid input: expected numbers only ."
-    enterColsNum $1 $2
-elif [[ $num -lt 1 ]]
-then
- 	echo "Invalid input: expected number greater than two ."
- 	enterColsNum $1 $2
-elif [[ $num -gt 1000 ]]
-then
- 	echo "Invalid input: expected number less than 1000 ."
- 	enterColsNum $1 $2
-else
+function enterColsNum() {
+	echo "enter the number of columns for the table : "
+	read num
+	if [ -z "$num" ]; then
+		echo "Invalid input: empty value."
+		enterColsNum $1 $2
+	elif ! [[ $num =~ ^[0-9]+$ ]]; then
+		echo "Invalid input: expected numbers only ."
+		enterColsNum $1 $2
+	elif [[ $num -lt 1 ]]; then
+		echo "Invalid input: expected number greater than two ."
+		enterColsNum $1 $2
+	elif [[ $num -gt 1000 ]]; then
+		echo "Invalid input: expected number less than 1000 ."
+		enterColsNum $1 $2
+	else
 
-counter=1
-while [ "$counter" -le "$num" ]; do
-    if [ "$counter" -eq 1 ]; then
-        validatePk "$1" "$2"
-        echo -e -n "\n" >> ./database/$1/"${2}_meta"
-    else
-        validateCol "$1" "$2"
-        echo -e -n "\n" >> ./database/$1/"${2}_meta"
-    fi
-    ((counter++))
-done
- echo "Table created successfully!"
- ./connectToDatabase
-fi
+		counter=1
+		while [ "$counter" -le "$num" ]; do
+			if [ "$counter" -eq 1 ]; then
+				validatePk "$1" "$2"
+				echo -e -n "\n" >>./database/$1/"${2}_meta"
+			else
+				validateCol "$1" "$2"
+				echo -e -n "\n" >>./database/$1/"${2}_meta"
+			fi
+			((counter++))
+		done
+		echo "Table created successfully!"
+		./connectToDatabase
+	fi
 }
 
+function validatePk() {
+	pk=1
+	echo -e "enter the name of the primary key : "
+	read name
 
-function validatePk(){
-pk=1
-echo -e "enter the name of the primary key : "
-read name
+	if grep -w "$name" ./database/$1/"${2}_meta"; then
+		echo "You already have a column with this name in this Database!"
+		validatePk $1 $2
 
-if grep -w "$name" ./database/$1/"${2}_meta"
-then
-    echo "You already have a column with this name in this Database!"
-    validatePk $1 $2
-    
-  elif [ -z "${name}" ]; then
-    echo "Invalid input: empty string."
-    validatePk $1 $2
-  elif [[ "${name}" == *" "* ]]; then
-    echo "Invalid input: Column name shouldn't contain spaces."
-   validatePk $1 $2
-  elif [[ "${name}" == [1-9]* ]]; then
-    echo "Invalid input: Column name shouldn't start with a number."
-   validatePk $1 $2
-  elif ! [[ "${name}" == [a-zA-Z]* ]]; then
-    echo "Invalid input: Column name shouldn't start with a special character."
-   validatePk $1 $2
-   else
-   
-   if [[ "${name}" == *" "* ]]; then
-    name=$(echo "${name}" | tr ' ' '_')
-   fi
-   
-   echo -n $name >> ./database/$1/"${2}_meta"
-   enterColDataType $name $1 "${2}_meta" $pk
-   
-   
-   echo -n ":pk" >> ./database/$1/"${2}_meta"
-   fi
+	elif [ -z "${name}" ]; then
+		echo "Invalid input: empty string."
+		validatePk $1 $2
+	elif [[ "${name}" == *" "* ]]; then
+		echo "Invalid input: Column name shouldn't contain spaces."
+		validatePk $1 $2
+	elif [[ "${name}" == [1-9]* ]]; then
+		echo "Invalid input: Column name shouldn't start with a number."
+		validatePk $1 $2
+	elif ! [[ "${name}" == [a-zA-Z]* ]]; then
+		echo "Invalid input: Column name shouldn't start with a special character."
+		validatePk $1 $2
+	else
+
+		if [[ "${name}" == *" "* ]]; then
+			name=$(echo "${name}" | tr ' ' '_')
+		fi
+
+		echo -n $name >>./database/$1/"${2}_meta"
+		enterColDataType $name $1 "${2}_meta" $pk
+
+		echo -n ":pk" >>./database/$1/"${2}_meta"
+	fi
 }
 
 function validateCol() {
-pk=0
-echo -e "enter the name of the next column : "
-read name
+	pk=0
+	echo -e "enter the name of the next column : "
+	read name
 
-if  grep -w "$name" ./database/$1/"${2}_meta"
-   then
-    echo "You already have a column with this name in this Database!"
-    validateCol $1 $2
-   
-  elif [ -z "${name}" ]; then
-    echo "Invalid input: empty string."
-    validateCol $1 $2
-  elif [[ "${name}" == *" "* ]]; then
-    echo "Invalid input: Column name shouldn't contain spaces."
-   validateCol $1 $2
-  elif [[ "${name}" == [1-9]* ]]; then
-    echo "Invalid input: Column name shouldn't start with a number."
-   validateCol $1 $2
-  elif ! [[ "${name}" == [a-zA-Z]* ]]; then
-    echo "Invalid input: Column name shouldn't start with a special character."
-   validateCol $1 $2
-   else
-   
-   if [[ "${name}" == *" "* ]]; then
-    name=$(echo "${name}" | tr ' ' '_')
-    fi
-   echo -n $name >> ./database/$1/"${2}_meta"
-   enterColDataType $name $1 "${2}_meta" $pk
-   fi
+	if grep -w "$name" ./database/$1/"${2}_meta"; then
+		echo "You already have a column with this name in this Database!"
+		validateCol $1 $2
+
+	elif [ -z "${name}" ]; then
+		echo "Invalid input: empty string."
+		validateCol $1 $2
+	elif [[ "${name}" == *" "* ]]; then
+		echo "Invalid input: Column name shouldn't contain spaces."
+		validateCol $1 $2
+	elif [[ "${name}" == [1-9]* ]]; then
+		echo "Invalid input: Column name shouldn't start with a number."
+		validateCol $1 $2
+	elif ! [[ "${name}" == [a-zA-Z]* ]]; then
+		echo "Invalid input: Column name shouldn't start with a special character."
+		validateCol $1 $2
+	else
+
+		if [[ "${name}" == *" "* ]]; then
+			name=$(echo "${name}" | tr ' ' '_')
+		fi
+		echo -n $name >>./database/$1/"${2}_meta"
+		enterColDataType $name $1 "${2}_meta" $pk
+	fi
 }
 
-function enterColDataType(){
-echo "specify the data type of the column ${1} : "
- select option in "varchar" "integer"
- do
- case $REPLY in 
- 1) echo -n  ":varchar" >> ./database/$2/$3
- enterColConstraints $1 $2 $3 $4
- break
- ;;
- 2) echo -n ":integer" >> ./database/$2/$3
-  enterColConstraints $1 $2 $3 $4
-  break
- ;;
- *)
- echo "Invalid Input."
- enterColDataType $1 $2 $3 $4
- ;;
- esac
- 
- done
+function enterColDataType() {
+	echo "specify the data type of the column ${1} : "
+	select option in "varchar" "integer"; do
+		case $REPLY in
+		1)
+			echo -n ":varchar" >>./database/$2/$3
+			enterColConstraints $1 $2 $3 $4
+			break
+			;;
+		2)
+			echo -n ":integer" >>./database/$2/$3
+			enterColConstraints $1 $2 $3 $4
+			break
+			;;
+		*)
+			echo "Invalid Input."
+			enterColDataType $1 $2 $3 $4
+			;;
+		esac
+
+	done
 }
 
-function enterColConstraints(){
-    null=0
-    unique=0
- 
-	if [[ $4 -eq 0 ]]
-	then
-    echo "Choose a constraint for $1 : "
-    options=("not null" "unique" "done")
+function enterColConstraints() {
+	null=0
+	unique=0
 
-    while true; do
-        echo "Options:"
-        for ((i=0; i<${#options[@]}; i++)); do
-            echo "$((i+1))) ${options[i]}"
-        done
+	if [[ $4 -eq 0 ]]; then
+		echo "Choose a constraint for $1 : "
+		options=("not null" "unique" "done")
 
-        read -p "Enter your choice: " choice
+		while true; do
+			echo "Options:"
+			for ((i = 0; i < ${#options[@]}; i++)); do
+				echo "$((i + 1))) ${options[i]}"
+			done
 
-        case "$choice" in
-            1)
-                if [ "$null" -eq 0 ]; then
-                    echo -n ":notNull" >> "./database/$2/$3"
-                    null=1
-                else
-                    echo "You already set this constraint before."
-                fi
-                ;;
-            2)
-                if [ "$unique" -eq 0 ]; then
-                    echo -n ":unique" >> "./database/$2/$3"
-                    unique=1
-                else
-                    echo "You already set this constraint before."
-                fi
-                ;;
-            3)
-                break
-                
-                
-                ;;
-            *)
-                echo "Invalid option."
-                ;;
-        esac
-    done
-    fi
-    
+			read -p "Enter your choice: " choice
+
+			case "$choice" in
+			1)
+				if [ "$null" -eq 0 ]; then
+					echo -n ":notNull" >>"./database/$2/$3"
+					null=1
+				else
+					echo "You already set this constraint before."
+				fi
+				;;
+			2)
+				if [ "$unique" -eq 0 ]; then
+					echo -n ":unique" >>"./database/$2/$3"
+					unique=1
+				else
+					echo "You already set this constraint before."
+				fi
+				;;
+			3)
+				break
+
+				;;
+
+			*)
+				echo "Invalid option."
+				;;
+			esac
+		done
+	fi
 
 }
-
 
 createTable $1
-
-

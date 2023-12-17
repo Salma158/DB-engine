@@ -1,199 +1,180 @@
 #!/bin/bash
 
 function enterColumnsTodelete() {
-    all=0
-    selectedColumns=()
-# all or not
-    echo "Do you want to select specific columns to delete from ?"
-    select choice in "all" "specific columns"; do
-        case $choice in
-            "all")
-                all=1
-                break
-                ;;
-            "specific columns")
-                break
-                ;;
-            *)
-                echo "Invalid option. Please select again."
-                ;;
-        esac
-    done
+	all=0
+	selectedColumns=()
+	# all or not
+	echo "Do you want to select specific columns to delete from ?"
+	select choice in "all" "specific columns"; do
+		case $choice in
+		"all")
+			all=1
+			break
+			;;
+		"specific columns")
+			break
+			;;
+		*)
+			echo "Invalid option. Please select again."
+			;;
+		esac
+	done
 
-# to find the specific columns
-    if [[ $all -eq 0 ]]; then
-        echo "Here is a list of the column names of the table. Choose columns to delete (enter 'done' to finish): "
-        tableFields=$(awk -F: '{print $1}' "./database/$1/${2}_meta")
+	# to find the specific columns
+	if [[ $all -eq 0 ]]; then
+		echo "Here is a list of the column names of the table. Choose columns to delete (enter 'done' to finish): "
+		tableFields=$(awk -F: '{print $1}' "./database/$1/${2}_meta")
 
-        for i in $tableFields; do
-            echo $i
-        done
+		for i in $tableFields; do
+			echo $i
+		done
 
-        while true; do
-            read -p "Enter a column name (or 'done' to finish): " column
+		while true; do
+			read -p "Enter a column name (or 'done' to finish): " column
 
-            if [[ $column == "done" ]]; then
-                break
-            fi
+			if [[ $column == "done" ]]; then
+				break
+			fi
 
-            found=false
-            for i in $tableFields; do
-                if [[ $column == $i ]]; then
-                    found=true
-                    if [[ ! " ${selectedColumns[@]} " =~ " $column " ]]; then
-                        colNums=$(awk -F: -v name="$column" '{if ( $1 == name ) {print NR}}' "./database/$1/${2}_meta" )
-                        selectedColumns+=("$colNums")
-                    else
-                        echo "Column $column is already selected. Please choose a different column."
-                    fi
-                    break
-                fi
-            done
+			found=false
+			for i in $tableFields; do
+				if [[ $column == $i ]]; then
+					found=true
+					if [[ ! " ${selectedColumns[@]} " =~ " $column " ]]; then
+						colNums=$(awk -F: -v name="$column" '{if ( $1 == name ) {print NR}}' "./database/$1/${2}_meta")
+						selectedColumns+=("$colNums")
+					else
+						echo "Column $column is already selected. Please choose a different column."
+					fi
+					break
+				fi
+			done
 
-            if [[ $found == false ]]; then
-                echo "Invalid selection. No column with this name in the table!"
-            fi
-        done
-    fi
+			if [[ $found == false ]]; then
+				echo "Invalid selection. No column with this name in the table!"
+			fi
+		done
+	fi
 
-#to know condition or not
-    cond=0
-    
-    Valid=1              
-                for i in "${selectedColumns[@]}"
-                do
-                	validConstraintNull $i $1 $2
-                	valid=$?
-                	echo $valid
-                	if [[ $valid -eq 0 ]]
-                	then
-                	echo "columns with constraint not Null or pk , cannot delete these fields"
-                	enterColumnsTodelete $1 $2
-                	fi
-                done
-                
+	#to know condition or not
+	cond=0
 
-    echo "Do you have a specific condition you want to delete rows based on?"
-    select choice in "yes" "no"; do
-        case $choice in
-            "yes")
-                cond=1
-                break
-                ;;
-            "no")
-                break
-                ;;
-            *)
-                echo "Invalid option. Please select again."
-                ;;
-        esac
-    done
+	Valid=1
+	for i in "${selectedColumns[@]}"; do
+		validConstraintNull $i $1 $2
+		valid=$?
+		echo $valid
+		if [[ $valid -eq 0 ]]; then
+			echo "columns with constraint not Null or pk , cannot delete these fields"
+			enterColumnsTodelete $1 $2
+		fi
+	done
 
-   if [[ $cond -eq 1 ]]; then
-    echo "Enter the name of the column you want the condition based on: "
-    read condCol
+	echo "Do you have a specific condition you want to delete rows based on?"
+	select choice in "yes" "no"; do
+		case $choice in
+		"yes")
+			cond=1
+			break
+			;;
+		"no")
+			break
+			;;
+		*)
+			echo "Invalid option. Please select again."
+			;;
+		esac
+	done
 
-    if grep -w "$condCol" "./database/$1/${2}_meta" >/dev/null; then
-        condColNum=$(awk -F: -v col="$condCol" '{ if ($1 == col) print NR }' "./database/$1/${2}_meta")
+	if [[ $cond -eq 1 ]]; then
+		echo "Enter the name of the column you want the condition based on: "
+		read condCol
 
-        echo -n "Enter the value of the condition: "
-        read condval
+		if grep -w "$condCol" "./database/$1/${2}_meta" >/dev/null; then
+			condColNum=$(awk -F: -v col="$condCol" '{ if ($1 == col) print NR }' "./database/$1/${2}_meta")
 
-        # find rows with this value
-        NRofRows=$(awk -v fieldnum="$condColNum" -v fieldvalue="$condval" -F ":" '{if ($fieldnum == fieldvalue) {print NR}}' "./database/$1/$2")
+			echo -n "Enter the value of the condition: "
+			read condval
 
-        if [[ "$NRofRows" != "" ]]; then
-            
-            #
-                if [[ $all -eq 1 ]]; then                                        
-                    for i in $NRofRows; do
-                        sed -i "${i}d" "./database/$1/${2}"
-                    done
-                else              
-                
-                
-                
-           if [[ $valid -eq 1 ]]; then
-            
-                    for i in $NRofRows; do
-                        for j in "${selectedColumns[@]}"; do
-                        awk -v lineNumber="$i" -v newValue="_" -v fieldNumber="$j" -F: '{OFS=":"} {if (NR==lineNumber) $fieldNumber = newValue} 1' "./database/$1/${2}" >"./database/$1/${2}.tmp" && mv "./database/$1/${2}.tmp" "./database/$1/${2}"      
-                        done
-                        
-                    done                  
-                    echo "specific fields based on the condition are deleted successfully"
-                    ./connectToDatabase
-             
-                fi
-          fi
-            
-            
-            
-            
-        else
-            echo "There is no row matching the condition!"
-            ./connectToDatabase
-        fi
-    else
-        echo "Invalid column name for the condition!"
-        ./connectToDatabase
-    fi
+			# find rows with this value
+			NRofRows=$(awk -v fieldnum="$condColNum" -v fieldvalue="$condval" -F ":" '{if ($fieldnum == fieldvalue) {print NR}}' "./database/$1/$2")
 
+			if [[ "$NRofRows" != "" ]]; then
 
+				#
+				if [[ $all -eq 1 ]]; then
+					for i in $NRofRows; do
+						sed -i "${i}d" "./database/$1/${2}"
+					done
+				else
 
+					if [[ $valid -eq 1 ]]; then
 
-    
-    else
-    if [[ $all -eq 1 ]]; then
-        # All columns are deleted, and no condition is specified
-        sed -i '1!d' "./database/$1/$2"
-    else
-        for colNum in "${selectedColumns[@]}"; do
-            
-            awk -v fieldNumber="$colNum" -v newValue="_" -F: '{OFS=":"} { $fieldNumber = newValue } 1' "./database/$1/${2}" > "./database/$1/${2}.tmp" && mv "./database/$1/${2}.tmp" "./database/$1/${2}"
-        done
-        echo "Specific fields are deleted successfully."
-        ./connectToDatabase
-    fi
-fi
+						for i in $NRofRows; do
+							for j in "${selectedColumns[@]}"; do
+								awk -v lineNumber="$i" -v newValue="_" -v fieldNumber="$j" -F: '{OFS=":"} {if (NR==lineNumber) $fieldNumber = newValue} 1' "./database/$1/${2}" >"./database/$1/${2}.tmp" && mv "./database/$1/${2}.tmp" "./database/$1/${2}"
+							done
+
+						done
+						echo "specific fields based on the condition are deleted successfully"
+						./connectToDatabase
+
+					fi
+				fi
+
+			else
+
+				echo "There is no row matching the condition!"
+				./connectToDatabase
+			fi
+		else
+			echo "Invalid column name for the condition!"
+			./connectToDatabase
+		fi
+
+	else
+
+		if [[ $all -eq 1 ]]; then
+			# All columns are deleted, and no condition is specified
+			sed -i '1!d' "./database/$1/$2"
+		else
+			for colNum in "${selectedColumns[@]}"; do
+
+				awk -v fieldNumber="$colNum" -v newValue="_" -F: '{OFS=":"} { $fieldNumber = newValue } 1' "./database/$1/${2}" >"./database/$1/${2}.tmp" && mv "./database/$1/${2}.tmp" "./database/$1/${2}"
+			done
+			echo "Specific fields are deleted successfully."
+			./connectToDatabase
+		fi
+	fi
 
 }
-
 
 function validConstraintNull() {
 	constraints=$(awk -F: -v target="$1" '{if (NR == target) for (i=3; i<=NF; i++) {print $i}}' "./database/$2/${3}_meta")
 
-
 	if [[ $constraints != "" ]]; then
 		for i in $constraints; do
-		
-			if [ $i == "notNull" ] || [ $i == "pk" ]
-			then
-			return 0
+
+			if [ $i == "notNull" ] || [ $i == "pk" ]; then
+				return 0
 			else
-			return 1
+				return 1
 			fi
-			
+
 		done
 	else
 		return 1
 	fi
 }
 
-
-while true
-do
-echo "What table do you want to delete from : "
-read name
-if [ -f ./database/$1/$name ]
-then
-break
-else
-echo "there is not table with this name in the database !"
-fi
+while true; do
+	echo "What table do you want to delete from : "
+	read name
+	if [ -f ./database/$1/$name ]; then
+		break
+	else
+		echo "there is not table with this name in the database !"
+	fi
 done
 
-
-
 enterColumnsTodelete $1 $name
-

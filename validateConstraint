@@ -1,52 +1,54 @@
 #!/usr/bin/bash
 
 function validateConstraints() {
-    exist=0
-    primarykeys=""
+	exist=0
+	primarykeys=""
 
-    if [[ "$5" == "pk" ]]; then
+	if [[ "$5" == "pk" ]]; then
 
-    if [[ "$2" != "_" ]]; then
-    primarykeys=$(awk 'BEGIN {FS=":"} {print $1}' "./database/$3/$4")
-   	 if [[ "$primarykeys" == '' ]]; then
-        return 1
-   	 else
-    	for i in $primarykeys; do
-            if [ "$i" == "$2" ]; then
-                return 0
-            fi
-        done
-        return 1
-    fi
-fi
+		if [[ "$2" != "_" ]]; then
+			primarykeys=$(awk 'BEGIN {FS=":"} {print $1}' "./database/$3/$4")
+			if [[ "$primarykeys" == '' ]]; then
+				return 1
+			else
+				for i in $primarykeys; do
+					if [ "$i" == "$2" ]; then
+						return 0
+					fi
+				done
+				return 1
+			fi
+		fi
 
+	elif
+		[[ "$5" == "unique" ]]
+	then
+		if [[ "$2" != "_" ]]; then
+			colValues=$(awk -v n="$1" 'BEGIN {FS=":"} {print $n}' "./database/$3/$4")
+			if [[ "$colValues" = "" ]]; then
+				return 1
+			else
+				for i in $colValues; do
+					if [ "$i" == "$2" ]; then
+						exist=1
+						return 0
+					fi
+				done
+				if [[ "$exist" -eq 0 ]]; then
+					return 1
+				fi
+			fi
+		else
+			return 1
+		fi
 
-    elif [[ "$5" == "unique" ]]; then
-        if [[ "$2" != "_" ]]; then
-            colValues=$(awk -v n="$1" 'BEGIN {FS=":"} {print $n}' "./database/$3/$4")
-            if [[ "$colValues" = "" ]]; then
-                return 1
-            else
-                for i in $colValues; do
-                    if [ "$i" == "$2" ]; then
-                        exist=1
-                        return 0
-                    fi
-                done
-                if [[ "$exist" -eq 0 ]]; then
-                    return 1
-                fi
-            fi
-        else
-            return 1
-        fi
-        
-        
-    elif [[ "$5" == "notNull" ]]; then
-        if [[ "$2" = "_" ]]; then
-            return 0
-        else
-            return 1
-        fi
-    fi
+	elif
+		[[ "$5" == "notNull" ]]
+	then
+		if [[ "$2" = "_" ]]; then
+			return 0
+		else
+			return 1
+		fi
+	fi
 }

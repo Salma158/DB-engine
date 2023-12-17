@@ -2,36 +2,30 @@
 
 databasesCount=$(ls database | wc -l)
 
-if (( $databasesCount == 0 ))
-then
+if (($databasesCount == 0)); then
 	echo "the Database engine is already empty."
-select choice in "Return to main menu" "Exit"
-do
-case $REPLY in
-1) 
-./main
-;;
-2)
-exit 
-;;
-esac
-done
+	select choice in "Return to main menu" "Exit"; do
+		case $REPLY in
+		1)
+			./main
+			;;
+		2)
+			exit
+			;;
+		esac
+	done
 
 else
-echo "enter the name database do you want to drop."
-read name
-if [ -d database/$name ]
-then
-rm -r database/$name
-echo "$name database deleted successfully"
-./main
-else
+	echo "enter the name database do you want to drop."
+	read name
+	if [ -d database/$name ]; then
+		rm -r database/$name
+		echo "$name database deleted successfully"
+		./main
+	else
 
-echo "$name database does not exist."
-./main
+		echo "$name database does not exist."
+		./main
+	fi
+
 fi
-
-fi
-
-
-
