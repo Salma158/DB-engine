@@ -4,7 +4,7 @@ data_folder="./database"
 
 if [ ! -d "$data_folder" ]; then
 	echo "No databases yet. 'database' folder does not exist."
-	exit 1
+	./connectToDatabase
 fi
 
 database_name="$1"
@@ -12,14 +12,14 @@ database_name="$1"
 # Check if the specified database folder exists
 if [ ! -d "$data_folder/$database_name" ]; then
 	echo "Error: Database '$database_name' does not exist."
-	exit 1
+	./connectToDatabase
 fi
 
 # Check if there are tables (files) in the specified database folder
 tables_folder="$data_folder/$1"
 if [ ! -d "$tables_folder" ] || [ -z "$(ls -A "$tables_folder" | grep -v "_meta$")" ]; then
 	echo "No tables found in the database '$database_name'."
-	exit 1
+	./connectToDatabase
 else
 	echo "Tables in the database '$database_name':"
 	# List tables (files) in the specified database folder, excluding files ending with "_meta"
@@ -34,7 +34,7 @@ read table_name
 table_path="$tables_folder/$table_name"
 if [ ! -f "$table_path" ]; then
 	echo "Error: Table '$table_name' (file) does not exist in the database '$database_name'."
-	exit 1
+	./connectToDatabase
 fi
 
 # Confirm with the user before dropping the table
@@ -42,7 +42,7 @@ echo "Are you sure you want to drop the table '$table_name' (file) in the databa
 read confirmation
 if [ "$confirmation" != "y" ]; then
 	echo "Operation canceled."
-	exit 0
+	./connectToDatabase
 fi
 
 # Drop the table (file)

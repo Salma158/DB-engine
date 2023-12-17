@@ -61,7 +61,7 @@ function insert() {
 }
 
 while true; do
-	echo "What table do you want to insert into : "
+	
 
 	database_name="$1"
 	data_folder="./database"
@@ -76,6 +76,7 @@ while true; do
 	tables_folder="$data_folder/$database_name"
 	if [ ! -d "$tables_folder" ] || [ -z "$(ls -A "$tables_folder")" ]; then
 		echo "No tables found in the database '$database_name'."
+		./connectToDatabase
 	elif [ -n "$(ls "$tables_folder" | grep -v "_meta$")" ]; then
 		echo "Tables in the database '$database_name':"
 		# List tables in the specified database, excluding files ending with "_meta"
@@ -83,7 +84,10 @@ while true; do
 		echo "" # Add a new line for better formatting
 	else
 		echo "No tables found in the database '$database_name'."
+		./connectToDatabase
+		exit
 	fi
+	echo "What table do you want to insert into : "
 
 	read name
 	if [ -f ./database/$1/$name ]; then

@@ -2,7 +2,13 @@
 
 function connect() {
 
+	data_folder="./database"
 
+# Check if the "data" folder exists
+if [ ! -d "$data_folder" ]; then
+	echo "the database engine is not initialized yet ..."
+	./main
+fi
 
 	databases=$(ls ./database | wc -l)
 

@@ -190,6 +190,8 @@ else
 
 while true; do
 	echo "What table do you want to select into : "
+	echo "here is the list of tables in this database : "
+	ls -F "./database/$1" | grep -v / | grep -v "_meta$"
 	read name
 	if [ -f ./database/$1/$name ]; then
 		break
