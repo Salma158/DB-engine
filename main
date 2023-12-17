@@ -17,7 +17,7 @@ do
         4) ./connectToDatabase
            break
            ;;
-        *) echo "Invalid option. Please choose a valid option."
+        *) echo "Sorry , Invalid option. Please choose a valid option."
            ;;
     esac
 done
