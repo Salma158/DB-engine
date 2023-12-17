@@ -67,7 +67,7 @@ function enterColumnsTodelete() {
                 	echo $valid
                 	if [[ $valid -eq 0 ]]
                 	then
-                	echo "you specified columns with constraint not Null , cannot delete these fields"
+                	echo "columns with constraint not Null or pk , cannot delete these fields"
                 	enterColumnsTodelete $1 $2
                 	fi
                 done
@@ -122,11 +122,8 @@ function enterColumnsTodelete() {
                         
                     done                  
                     echo "specific fields based on the condition are deleted successfully"
-                    
-                
-                
-                
-                
+                    ./connectToDatabase
+             
                 fi
           fi
             
@@ -135,9 +132,11 @@ function enterColumnsTodelete() {
             
         else
             echo "There is no row matching the condition!"
+            ./connectToDatabase
         fi
     else
         echo "Invalid column name for the condition!"
+        ./connectToDatabase
     fi
 
 
@@ -154,6 +153,7 @@ function enterColumnsTodelete() {
             awk -v fieldNumber="$colNum" -v newValue="_" -F: '{OFS=":"} { $fieldNumber = newValue } 1' "./database/$1/${2}" > "./database/$1/${2}.tmp" && mv "./database/$1/${2}.tmp" "./database/$1/${2}"
         done
         echo "Specific fields are deleted successfully."
+        ./connectToDatabase
     fi
 fi
 
@@ -167,7 +167,7 @@ function validConstraintNull() {
 	if [[ $constraints != "" ]]; then
 		for i in $constraints; do
 		
-			if [[ $i == "notNull" ]]
+			if [ $i == "notNull" ] || [ $i == "pk" ]
 			then
 			return 0
 			else

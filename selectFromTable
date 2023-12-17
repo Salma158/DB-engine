@@ -52,6 +52,7 @@ function enterColumnsToSelect() {
 
             if [[ $found == false ]]; then
                 echo "Invalid selection. No column with this name in the table!"
+                
             fi
         done
     fi
@@ -114,9 +115,11 @@ function enterColumnsToSelect() {
                 
             else
                 echo "There is no row matching the condition!"
+                ./connectToDatabase
             fi
         else
             echo "Invalid column name for the condition!"
+            ./connectToDatabase
         fi
         
         
@@ -137,7 +140,7 @@ function enterColumnsToSelect() {
                     done
                     echo "${rowValues[*]}"
                 done
-       
+       ./connectToDatabase
                     
     fi
     fi
