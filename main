@@ -1,6 +1,6 @@
 #! /bin/bash
 
-echo "Welcome ..."
+echo "--------------------    Welcome to Database Management System , Please choose on of these options    -----------------------"
 
 select option in "Create Database" "Drop Database" "List Database" "Connect to Database"
 do
