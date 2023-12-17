@@ -167,6 +167,14 @@ function validConstraintNull() {
 	fi
 }
 
+
+directory="./database/$1"
+
+if [ -z "$(ls -A $directory)" ]; then
+    echo "The database is empty."
+    ./connectToDatabase
+else
+
 while true; do
 	echo "What table do you want to delete from : "
 	read name
@@ -176,5 +184,6 @@ while true; do
 		echo "there is not table with this name in the database !"
 	fi
 done
+fi
 
 enterColumnsTodelete $1 $name

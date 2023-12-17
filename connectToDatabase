@@ -2,6 +2,8 @@
 
 function connect() {
 
+
+
 	databases=$(ls ./database | wc -l)
 
 	if (($databases == 0)); then
@@ -83,7 +85,7 @@ function connect() {
 			connect
 
 		fi
-	fi
+	fi	
 }
 
 connect
